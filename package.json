@@ -1,0 +1,60 @@
+{
+  "name": "delir",
+  "description": "Generate all the routes of your next application",
+  "version": "0.0.1",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "delir": "dist/bin/delir.js"
+  },
+  "main": "dist/index.js",
+  "keywords": [
+    "code-generation",
+    "react",
+    "next"
+  ],
+  "author": {
+    "name": "Victor Bury",
+    "email": "bury.victor@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anymaniax/delir"
+  },
+  "scripts": {
+    "build": "tsup ./src/bin/delir.ts ./src/index.ts --minify --clean --dts",
+    "dev": "tsup ./src/bin/delir.ts ./src/index.ts --clean --watch src --onSuccess 'yarn generate-routes'",
+    "lint": "eslint src/**/*.ts",
+    "generate-routes": "node ./dist/bin/delir.js ./example/routes.ts --workspace ./example",
+    "format": "prettier --write 'src/**/*.{js,ts}'",
+    "release": "dotenv release-it",
+    "prepare": "husky install",
+    "commitlint": "commitlint"
+  },
+  "dependencies": {
+    "cac": "^6.7.8",
+    "chalk": "^4.1.2",
+    "fs-extra": "^10.0.0",
+    "upath": "^2.0.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^13.2.1",
+    "@commitlint/config-conventional": "^13.2.0",
+    "@release-it/conventional-changelog": "^3.3.0",
+    "@types/fs-extra": "^9.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "commitlint": "^13.2.1",
+    "dotenv": "^10.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.2",
+    "lint-staged": "^11.2.3",
+    "prettier": "^2.4.1",
+    "release-it": "^14.11.6",
+    "tsup": "^5.4.0"
+  }
+}
