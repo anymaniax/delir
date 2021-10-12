@@ -1,21 +1,36 @@
-## Code Generation
+`Delir` generates a _Route Manifest_ for you. It allows you to refer to a
+page by _name_ instead of _location_:
 
-`delir` is able to generate all the routes of your next application.
+```tsx
+// Assume you have a page at app/pages/products/[productId].tsx
+export default function ProductsPage() { ...
 
-Based on routes manifest of blitz.js
+// You can then use Routes...
+import { Link } from "next"
+import { Routes } from "../path-to-manifest-file"
 
-## Install
+// ...to refer to it by name...
+<Link href={Routes.ProductsPage({ productId: 123 })} />
 
-```bash
-  npm install -g delir
+// ...instead of looking up the location!
+<Link href={`/products/${123}`} />
 ```
 
-## How to use
+The _Route Manifest_ has some advantages:
 
-```bash
-  delir ./your-output-file
+- improved expressiveness
+- simplifies moving pages to new locations
+
+## Query Parameters {#query-parameters}
+
+Query parameters can be specified together with route parameters.
+
+```tsx
+// instead of ...
+<Link href={`/products/${pid}?offerCode=capybara`} />
+
+// ... you can do:
+<Link href={Routes.Product({ pid, offerCode: "capybara" })} />
 ```
 
-```bash
-  delir ./your-output-file --workspace ./your-next-app-folder
-```
+Simple cli which is an extract of the [routes manifest](https://blitzjs.com/docs/route-manifest) feature from [blitz](https://blitzjs.com/). Thanks for the super framework ❤️
