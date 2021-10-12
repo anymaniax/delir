@@ -1,6 +1,24 @@
 `Delir` generates a _Route Manifest_ for you. It allows you to refer to a
 page by _name_ instead of _location_:
 
+## Install
+
+```bash
+  npm install -g delir
+```
+
+## How to use
+
+```bash
+  delir ./your-output-file
+```
+
+```bash
+  delir ./your-output-file --workspace ./your-next-app-folder
+```
+
+## Example
+
 ```tsx
 // Assume you have a page at app/pages/products/[productId].tsx
 export default function ProductsPage() { ...
