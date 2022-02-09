@@ -312,6 +312,9 @@ export function generateManifest(
     (results: string[], [path, manifest]) =>
       [
         ...results,
+        `/**`,
+        ` * ${name}`,
+        ` */`,
         `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`
         `const ${name}${!onlyJs && generateGenericDefinition(manifest) || ''} = (query) => ({ pathname: ${name}Path, query });`,
         `${name}.isActive = () => window.location.pathname.startsWith(${name}Path);`
