@@ -277,6 +277,25 @@ function dedupeBy<T, K>(arr: T[], by: (v: T) => K): T[] {
   });
 }
 
+function generateGenericDefinition ({ name, parameters, multipleParameters }: RouteManifestEntry) {
+  const params = [
+    ...parameters.map(
+      (param) =>
+        param.name + (param.optional ? '?' : '') + ': string | number',
+    ),
+    ...multipleParameters.map(
+      (param) =>
+        param.name + (param.optional ? '?' : '') + ': (string | number)[]',
+    )
+  ].join('; ');
+
+  const queryType = params 
+    ? 'ParsedUrlQueryInput | undefined'
+    : `{ ${params} } & ParsedUrlQueryInput`
+
+  return `GeneratedRoute<typeof ${name}Path, ${queryType}>`
+}
+
 export function generateManifest(
   routes: Record<string, RouteManifestEntry>,
   onlyJs: boolean,
@@ -289,44 +308,40 @@ export function generateManifest(
     ([_path, { name }]) => name,
   );
 
-  const implementationLines = routesWithoutDuplicates.map(
-    ([path, { name }]) =>
-      `${name}: (query) => ({ pathname: "${path}", query })`,
+  const implementationLines = routesWithoutDuplicates.reduce(
+    (results: string[], [path, manifest]) =>
+      [
+        ...results,
+        `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`
+        `const ${name}${!onlyJs && generateGenericDefinition(manifest) || ''} = (query) => ({ pathname: ${name}Path, query });`,
+        `${name}.isActive = () => window.location.pathname.startsWith(${name}Path);`
+      ],
+    []
   );
-
-  const declarationLines = routesWithoutDuplicates.map(
-    ([_path, { name, parameters, multipleParameters }]) => {
-      if (parameters.length === 0 && multipleParameters.length === 0) {
-        return `${name}(query?: ParsedUrlQueryInput): UrlObject`;
-      }
-
-      return `${name}(query: { ${[
-        ...parameters.map(
-          (param) =>
-            param.name + (param.optional ? '?' : '') + ': string | number',
-        ),
-        ...multipleParameters.map(
-          (param) =>
-            param.name + (param.optional ? '?' : '') + ': (string | number)[]',
-        ),
-      ].join('; ')} } & ParsedUrlQueryInput): UrlObject`;
-    },
-  );
-
-  const declarationEnding = declarationLines.length > 0 ? ';' : '';
 
   return {
-    implementation:
-      `export const Routes${!onlyJs ? ': Routes' : ''} = {\n` +
-      implementationLines.map((line) => '  ' + line).join(',\n') +
-      '\n}',
+    implementation: [
+      ...implementationLines,
+      'export const Routes = {',
+      ...routesWithoutDuplicates.map(([path, { name }]) => name),
+      '}',
+    ].join('\n'),
     declaration: `
 import type { ParsedUrlQueryInput } from 'querystring'
 import type { UrlObject } from 'url';
-export interface Routes {
-${declarationLines.map((line) => '  ' + line).join(';\n') + declarationEnding}
-}`.trim(),
-  };
+
+type Route<TPath, TQuery extends ParsedUrlQueryInput> = (
+  query?: TQuery
+) => { pathname: TPath; query?: TQuery };
+
+type GeneratedRoute<TPath, TQuery extends ParsedUrlQueryInput> = Route<
+  TPath,
+  TQuery
+> & {
+  isActive: () => boolean;
+};
+`
+  }
 }
 
 export async function saveRouteManifest(config: Config) {
