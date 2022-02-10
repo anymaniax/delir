@@ -52,3 +52,25 @@ Query parameters can be specified together with route parameters.
 ```
 
 Simple cli which is an extract of the [routes manifest](https://blitzjs.com/docs/route-manifest) feature from [blitz](https://blitzjs.com/). Thanks for the super framework ❤️
+
+
+## Route matching
+
+```tsx
+// Assume you have a page at app/pages/products/[productId].tsx
+export default function ProductsPage() { ... }
+
+import { useRouter } from 'next/router';
+// You can then use Routes...
+import { Routes } from "../path-to-manifest-file";
+
+// in your server api
+Routes.ProductsPage.isActive(someobject.path)
+
+// generically without next router
+Routes.ProductsPage.isActive(window.location.pathname)
+
+// with asPath from useRouter
+const { asPath } = useRouter();
+Routes.ProductsPage.isActive(asPath);
+```

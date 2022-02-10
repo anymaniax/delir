@@ -10,7 +10,7 @@ type GeneratedRoute<
     ? (query?: ParsedUrlQueryInput) => { pathname: TPath; query?: ParsedUrlQueryInput }
     : (query: TQuery) => { pathname: TPath; query: TQuery }
   ) & {
-    matches: ReturnType<typeof match>;
+    isActive: ReturnType<typeof match>;
   }
 
 
@@ -18,17 +18,17 @@ type GeneratedRoute<
  * Detail
  */
 const DetailPath = "/[id]" as const;
-const DetailMatcher = match(DetailPath.replace(/[(.*)]/, ':$1'));
+const DetailMatcher = match(DetailPath.replace(/\[(.*)\]/, ':$1'));
 const Detail:GeneratedRoute<typeof DetailPath, { id: string | number } & ParsedUrlQueryInput> = (query) => ({ pathname: DetailPath, query });
-Detail.matches = () => DetailMatcher(window.location.pathname);
+Detail.isActive = (path = window.location.pathname) => DetailMatcher(path);
 
 /**
  * Home
  */
 const HomePath = "/" as const;
-const HomeMatcher = match(HomePath.replace(/[(.*)]/, ':$1'));
+const HomeMatcher = match(HomePath.replace(/\[(.*)\]/, ':$1'));
 const Home:GeneratedRoute<typeof HomePath> = (query) => ({ pathname: HomePath, query });
-Home.matches = () => HomeMatcher(window.location.pathname);
+Home.isActive = (path = window.location.pathname) => HomeMatcher(path);
 export const Routes = {
   Detail,
   Home
