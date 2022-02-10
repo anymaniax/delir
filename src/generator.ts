@@ -315,12 +315,12 @@ export function generateManifest(
         ` * ${name}`,
         ` */`,
         `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`,
-        `const ${name}Matcher = match(${name}Path.replace(/\[(.*)\]/, ':$1'));`,
+        `const ${name}Matcher = match(${name}Path.replace(/\\[(.*)\\]/, ':$1'));`,
         `const ${name}${!onlyJs
             && generateGenericDefinition({name, ...manifest})
             || ''
         } = (query) => ({ pathname: ${name}Path, query });`,
-        `${name}.matches = () => ${name}Matcher(window.location.pathname);`
+        `${name}.isActive = (path = window.location.pathname) => ${name}Matcher(path);`
       ],
     []
   );
@@ -344,7 +344,7 @@ type GeneratedRoute<
     ? (query?: ParsedUrlQueryInput) => { pathname: TPath; query?: ParsedUrlQueryInput }
     : (query: TQuery) => { pathname: TPath; query: TQuery }
   ) & {
-    matches: ReturnType<typeof match>;
+    isActive: ReturnType<typeof match>;
   }`
   }
 }
