@@ -37,7 +37,8 @@
     "cac": "^6.7.8",
     "chalk": "^4.1.2",
     "fs-extra": "^10.0.0",
-    "upath": "^2.0.1"
+    "upath": "^2.0.1",
+    "path-to-regexp": "6.2.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^13.2.1",

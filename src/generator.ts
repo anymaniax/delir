@@ -289,11 +289,9 @@ function generateGenericDefinition ({ name, parameters, multipleParameters }: Ro
     )
   ].join('; ');
 
-  const queryType = params 
-    ? 'ParsedUrlQueryInput | undefined'
-    : `{ ${params} } & ParsedUrlQueryInput`
+  const queryType = params && `, { ${params} } & ParsedUrlQueryInput` || ''
 
-  return `GeneratedRoute<typeof ${name}Path, ${queryType}>`
+  return `:GeneratedRoute<typeof ${name}Path${queryType}>`
 }
 
 export function generateManifest(
@@ -309,15 +307,20 @@ export function generateManifest(
   );
 
   const implementationLines = routesWithoutDuplicates.reduce(
-    (results: string[], [path, manifest]) =>
+    (results: string[], [path, {name, ...manifest}]) =>
       [
         ...results,
+        '',
         `/**`,
         ` * ${name}`,
         ` */`,
-        `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`
-        `const ${name}${!onlyJs && generateGenericDefinition(manifest) || ''} = (query) => ({ pathname: ${name}Path, query });`,
-        `${name}.isActive = () => window.location.pathname.startsWith(${name}Path);`
+        `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`,
+        `const ${name}Matcher = match(${name}Path.replace(/\[(.*)\]/, ':$1'));`,
+        `const ${name}${!onlyJs
+            && generateGenericDefinition({name, ...manifest})
+            || ''
+        } = (query) => ({ pathname: ${name}Path, query });`,
+        `${name}.matches = () => ${name}Matcher(window.location.pathname);`
       ],
     []
   );
@@ -326,24 +329,23 @@ export function generateManifest(
     implementation: [
       ...implementationLines,
       'export const Routes = {',
-      ...routesWithoutDuplicates.map(([path, { name }]) => name),
-      '}',
+      routesWithoutDuplicates.map(([path, { name }]) => '  ' + name).join(',\n'),
+      '};',
     ].join('\n'),
     declaration: `
 import type { ParsedUrlQueryInput } from 'querystring'
-import type { UrlObject } from 'url';
+import { match } from "path-to-regexp";
 
-type Route<TPath, TQuery extends ParsedUrlQueryInput> = (
-  query?: TQuery
-) => { pathname: TPath; query?: TQuery };
-
-type GeneratedRoute<TPath, TQuery extends ParsedUrlQueryInput> = Route<
+type GeneratedRoute<
   TPath,
-  TQuery
-> & {
-  isActive: () => boolean;
-};
-`
+  TQuery extends ParsedUrlQueryInput | void = void
+> = (
+  TQuery extends void
+    ? (query?: ParsedUrlQueryInput) => { pathname: TPath; query?: ParsedUrlQueryInput }
+    : (query: TQuery) => { pathname: TPath; query: TQuery }
+  ) & {
+    matches: ReturnType<typeof match>;
+  }`
   }
 }
 
