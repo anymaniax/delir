@@ -277,6 +277,23 @@ function dedupeBy<T, K>(arr: T[], by: (v: T) => K): T[] {
   });
 }
 
+function generateGenericDefinition ({ name, parameters, multipleParameters }: RouteManifestEntry) {
+  const params = [
+    ...parameters.map(
+      (param) =>
+        param.name + (param.optional ? '?' : '') + ': string | number',
+    ),
+    ...multipleParameters.map(
+      (param) =>
+        param.name + (param.optional ? '?' : '') + ': (string | number)[]',
+    )
+  ].join('; ');
+
+  const queryType = params && `, { ${params} } & ParsedUrlQueryInput` || ''
+
+  return `:GeneratedRoute<typeof ${name}Path${queryType}>`
+}
+
 export function generateManifest(
   routes: Record<string, RouteManifestEntry>,
   onlyJs: boolean,
@@ -289,44 +306,47 @@ export function generateManifest(
     ([_path, { name }]) => name,
   );
 
-  const implementationLines = routesWithoutDuplicates.map(
-    ([path, { name }]) =>
-      `${name}: (query) => ({ pathname: "${path}", query })`,
+  const implementationLines = routesWithoutDuplicates.reduce(
+    (results: string[], [path, {name, ...manifest}]) =>
+      [
+        ...results,
+        '',
+        `/**`,
+        ` * ${name}`,
+        ` */`,
+        `const ${name}Path = "${path}"${!onlyJs && ' as const' || ''};`,
+        `const ${name}Matcher = match(${name}Path.replace(/\\[(.*)\\]/, ':$1'));`,
+        `const ${name}${!onlyJs
+            && generateGenericDefinition({name, ...manifest})
+            || ''
+        } = (query) => ({ pathname: ${name}Path, query });`,
+        `${name}.isActive = (path = window.location.pathname) => ${name}Matcher(path);`
+      ],
+    []
   );
-
-  const declarationLines = routesWithoutDuplicates.map(
-    ([_path, { name, parameters, multipleParameters }]) => {
-      if (parameters.length === 0 && multipleParameters.length === 0) {
-        return `${name}(query?: ParsedUrlQueryInput): UrlObject`;
-      }
-
-      return `${name}(query: { ${[
-        ...parameters.map(
-          (param) =>
-            param.name + (param.optional ? '?' : '') + ': string | number',
-        ),
-        ...multipleParameters.map(
-          (param) =>
-            param.name + (param.optional ? '?' : '') + ': (string | number)[]',
-        ),
-      ].join('; ')} } & ParsedUrlQueryInput): UrlObject`;
-    },
-  );
-
-  const declarationEnding = declarationLines.length > 0 ? ';' : '';
 
   return {
-    implementation:
-      `export const Routes${!onlyJs ? ': Routes' : ''} = {\n` +
-      implementationLines.map((line) => '  ' + line).join(',\n') +
-      '\n}',
+    implementation: [
+      ...implementationLines,
+      'export const Routes = {',
+      routesWithoutDuplicates.map(([path, { name }]) => '  ' + name).join(',\n'),
+      '};',
+    ].join('\n'),
     declaration: `
 import type { ParsedUrlQueryInput } from 'querystring'
-import type { UrlObject } from 'url';
-export interface Routes {
-${declarationLines.map((line) => '  ' + line).join(';\n') + declarationEnding}
-}`.trim(),
-  };
+import { match } from "path-to-regexp";
+
+type GeneratedRoute<
+  TPath,
+  TQuery extends ParsedUrlQueryInput | void = void
+> = (
+  TQuery extends void
+    ? (query?: ParsedUrlQueryInput) => { pathname: TPath; query?: ParsedUrlQueryInput }
+    : (query: TQuery) => { pathname: TPath; query: TQuery }
+  ) & {
+    isActive: ReturnType<typeof match>;
+  }`
+  }
 }
 
 export async function saveRouteManifest(config: Config) {
