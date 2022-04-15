@@ -1,7 +1,7 @@
 {
   "name": "delir",
   "description": "Generates a Route Manifest for you. It allows you to refer to a page by name instead of location",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "license": "MIT",
   "files": [
     "dist"
